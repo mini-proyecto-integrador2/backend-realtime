@@ -8,8 +8,9 @@ Proyecto Integrador I (750018C), Universidad del Valle.
 
 | Servicio | URL |
 |---|---|
-| Servidor de tiempo real (Render) | (pegar la URL de Render) |
-| Estado del servicio | (URL de Render)/health |
+| Servidor de tiempo real (Render) |https://backend-api-aodp.onrender.com|
+| Estado del servicio |https://backend-api-aodp.onrender.com/api/health|
+| Documentación Swagger |https://backend-api-aodp.onrender.com/api/docs|
 
 > En el plan gratuito de Render el servicio se duerme; la primera petición puede tardar hasta un minuto.
 
