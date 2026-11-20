@@ -8,8 +8,8 @@ Proyecto Integrador I (750018C), Universidad del Valle.
 
 | Servicio | URL |
 |---|---|
-| Servidor de tiempo real (Render) | Se publica en el despliegue de TS-02 (servicio Docker propio en Render) |
-| Estado del servicio | `<URL del servicio>/health` |
+| Servidor de tiempo real (Render) | https://salon-estudio-realtime.onrender.com |
+| Estado del servicio | https://salon-estudio-realtime.onrender.com/health |
 
 > En el plan gratuito de Render el servicio se duerme; la primera petición puede tardar hasta un minuto.
 
