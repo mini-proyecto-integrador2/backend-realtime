@@ -3,6 +3,7 @@ import http from 'node:http'
 import express from 'express'
 import cors from 'cors'
 import { Server } from 'socket.io'
+import { exigirToken, registrarEventos } from './salas/eventos'
 
 const PUERTO = Number(process.env.PORT ?? 4000)
 
@@ -23,13 +24,18 @@ app.get('/health', (_req, res) => {
 const servidor = http.createServer(app)
 const io = new Server(servidor, { cors: { origin: origenes } })
 
+// TS-02: toda conexión debe traer el ID token de Firebase en el handshake.
+exigirToken(io)
+
 io.on('connection', (socket) => {
-  console.log(`Cliente conectado: ${socket.id}`)
+  console.log(`Cliente conectado: ${socket.id} (${socket.data.usuario?.username})`)
 
   // Evento de prueba de la base técnica: el cliente envía «ping-base» y recibe la hora del servidor.
   socket.on('ping-base', (respuesta?: (datos: { ok: boolean; hora: string }) => void) => {
     if (typeof respuesta === 'function') respuesta({ ok: true, hora: new Date().toISOString() })
   })
+
+  registrarEventos(io, socket)
 
   socket.on('disconnect', (motivo) => {
     console.log(`Cliente desconectado: ${socket.id} (${motivo})`)

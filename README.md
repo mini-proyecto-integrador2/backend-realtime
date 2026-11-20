@@ -1,6 +1,6 @@
 # backend-realtime
 
-Servidor de tiempo real del **Salón de Estudio Colaborativo**: Node.js + TypeScript con Socket.IO. En este sprint es la base técnica (comprobación de estado y un evento de prueba); el chat, las salas y la señalización de WebRTC se agregan en los siguientes sprints.
+Servidor de tiempo real del **Salón de Estudio Colaborativo**: Node.js + TypeScript con Socket.IO. Desde el Sprint 2 (TS-02) exige el ID token de Firebase al conectarse, permite unirse a una sala validando su ID y reenvía los mensajes de texto solo a la misma sala, guardándolos en Firestore. La señalización de WebRTC se agrega en el Sprint 4.
 
 Proyecto Integrador I (750018C), Universidad del Valle.
 
@@ -8,9 +8,8 @@ Proyecto Integrador I (750018C), Universidad del Valle.
 
 | Servicio | URL |
 |---|---|
-| Servidor de tiempo real (Render) |https://backend-api-aodp.onrender.com|
-| Estado del servicio |https://backend-api-aodp.onrender.com/api/health|
-| Documentación Swagger |https://backend-api-aodp.onrender.com/api/docs|
+| Servidor de tiempo real (Render) | Se publica en el despliegue de TS-02 (servicio Docker propio en Render) |
+| Estado del servicio | `<URL del servicio>/health` |
 
 > En el plan gratuito de Render el servicio se duerme; la primera petición puede tardar hasta un minuto.
 
@@ -48,25 +47,31 @@ docker run -p 4000:4000 --env-file .env backend-realtime
 |---|---|---|
 | `PORT` | No | Puerto del servidor (4000 por defecto; Render lo define solo) |
 | `CORS_ORIGINS` | En producción | Orígenes permitidos separados por comas, por ejemplo la URL del frontend en Vercel |
+| `FIREBASE_SERVICE_ACCOUNT` | Sí | Cuenta de servicio de Firebase (la misma de backend-api). En local, la ruta al archivo JSON; en Render, el JSON completo |
 
 El archivo `.env` nunca se sube al repositorio; solo `.env.example`, sin valores reales.
 
 ## Qué expone
 
-| Tipo | Nombre | Descripción |
-|---|---|---|
-| HTTP GET | `/health` | Comprueba que el servicio responde |
-| Evento Socket.IO | `connection` | Un cliente se conecta |
-| Evento Socket.IO | `ping-base` | El cliente lo envía con una función de respuesta y recibe `{ ok, hora }` |
+Conexión desde el frontend:
 
-La documentación completa de los eventos de tiempo real se publica en un documento aparte (Sprint 6).
+```ts
+import { io } from 'socket.io-client'
+const socket = io(URL_TIEMPO_REAL, { auth: { token: await usuario.getIdToken() } })
+```
 
-## Despliegue
+Sin token válido, o si el usuario no tiene perfil, la conexión se rechaza con `connect_error` (`UNAUTHORIZED` o `PROFILE_NOT_FOUND`).
 
-Render, con Docker, a partir de la rama `main`. Las variables `CORS_ORIGINS` y `PORT` se configuran en el panel de Render.
+| Tipo | Nombre | Envía el cliente | Respuesta / qué recibe |
+|---|---|---|---|
+| HTTP GET | `/health` | — | `{ estado: "ok", servicio, hora }` |
+| Evento | `ping-base` | (función de respuesta) | `{ ok, hora }` |
+| Evento | `sala:unirse` | `{ salaId }` | `{ ok, sala, esAnfitrion, participantes }` o `{ ok: false, error: { code: "ROOM_NOT_FOUND" } }` |
+| Evento | `sala:salir` | — | `{ ok }` |
+| Evento | `chat:mensaje` | `{ texto }` (1 a 500 caracteres) | `{ ok, mensaje }`; además todos los de la misma sala reciben `chat:mensaje` con el mensaje |
+| Evento (servidor) | `sala:presencia` | — | `{ salaId, participantes: [{ uid, username }] }` cada vez que alguien entra o sale |
 
-## Equipo
+## Modelo en Firestore
 
-- Jairo Hernán González Barreto
-- Luis Yair Valencia Rivas
-- Martín Stivensson Álvarez Quintero
+- `rooms/{salaId}`: `{ id, nombre, anfitrion: { uid, username }, creada }` (la crea backend-api con `POST /api/salas`).
+- `rooms/{salaId}/messages/{mensajeId}`: `{ id, salaId, autor: { uid, username }, texto, enviado }`.
