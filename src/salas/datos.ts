@@ -24,9 +24,12 @@ export interface Mensaje {
   enviado: string
 }
 
+// Nunca se devuelve la lista de miembros (UIDs de otras personas).
 export async function obtenerSala(id: string): Promise<Sala | null> {
   const doc = await db.collection('rooms').doc(id).get()
-  return doc.exists ? (doc.data() as Sala) : null
+  if (!doc.exists) return null
+  const { miembros: _miembros, ...sala } = doc.data() as Sala & { miembros?: string[] }
+  return sala
 }
 
 export async function obtenerUsername(uid: string): Promise<string | null> {
